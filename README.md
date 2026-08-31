@@ -25,15 +25,17 @@ Leva uns 10 minutos, uma vez só. Você vai precisar de uma conta Google.
    - Dê qualquer apelido (ex: "Casa em Dia") e clique em registrar. **Não** precisa do Firebase Hosting.
    - O Firebase vai mostrar um bloco de código com um objeto `firebaseConfig = { apiKey: ..., ... }`. Copie esses valores.
 4. Abra o arquivo **`firebase-config.js`** deste repositório e substitua os valores de `window.FIREBASE_CONFIG` pelos que você copiou. O `window.CASA_APP_ID` já vem com um código aleatório — pode manter.
-5. De volta no console do Firebase, em **Realtime Database → Regras**, cole isto (trocando `TROQUE_AQUI` pelo mesmo valor que está em `CASA_APP_ID` no arquivo `firebase-config.js`) e publique:
+5. Ainda no console, vá em **Build → Authentication → Sign-in method** (ou a aba "Get started" se for a primeira vez) e **ative o provedor "Email/Password"** (Email/Senha). Sem isso ativado, ninguém consegue entrar no app — é um passo obrigatório.
+
+6. Em **Realtime Database → Regras**, cole isto e publique:
 
    ```json
    {
      "rules": {
        "casaEmDia": {
-         "TROQUE_AQUI": {
-           ".read": true,
-           ".write": true
+         "$appId": {
+           ".read": "auth != null",
+           ".write": "auth != null"
          }
        },
        "$other": {
@@ -44,13 +46,17 @@ Leva uns 10 minutos, uma vez só. Você vai precisar de uma conta Google.
    }
    ```
 
-   Isso restringe a leitura/escrita só ao "caminho" do seu app dentro do banco — o resto fica bloqueado.
+   Isso exige estar **autenticado** (login feito com sucesso) para ler ou escrever qualquer coisa no banco — não basta mais só conhecer o link ou o código do app.
 
-6. Suba o `firebase-config.js` atualizado para o GitHub (commit + push). Depois de alguns instantes, atualize a página no celular — o aviso amarelo de "Firebase não configurado" deve sumir, e as duas passam a ver as mesmas listas.
+7. Suba o `firebase-config.js` atualizado para o GitHub (commit + push). Depois de alguns instantes, atualize a página no celular — o aviso amarelo de "Firebase não configurado" deve sumir, e a tela de login aparece.
 
 ### Sobre a privacidade dessa configuração
 
-As regras acima deixam esse caminho do banco de dados **legível e gravável por qualquer pessoa que souber o valor de `CASA_APP_ID`** (não por qualquer pessoa do mundo, mas não é uma senha de verdade — é mais como uma URL secreta). Para um app doméstico entre vocês duas isso costuma ser suficiente. Se um dia quiser mais segurança, o passo natural é ativar o **Firebase Authentication** (ex: login por e-mail) e trocar a regra para exigir `auth != null` — é um passo a mais que posso te ajudar a fazer depois, se quiser.
+Agora o acesso é protegido por **login de verdade** (Firebase Authentication), não mais por um código secreto dentro do código-fonte público. Na primeira vez que abrir o app, cada uma escolhe um dos dois perfis ("Perfil verde" / "Perfil rosa") e cria uma senha — essa senha passa a ser exigida em todos os acessos futuros àquele perfil, em qualquer aparelho. Só quem sabe a senha certa consegue entrar e ver os dados, incluindo o financeiro pessoal. As regras do banco (passo 6 acima) fazem o Firebase recusar qualquer leitura ou escrita de quem não tiver feito login — então mesmo alguém que descubra a URL do site ou olhe o código-fonte no GitHub não consegue acessar os dados sem a senha.
+
+Duas observações importantes:
+- Guarde bem as duas senhas (uma para cada perfil) — não existe uma tela de "esqueci minha senha" configurada neste app simples. Se perder a senha de um perfil, o jeito mais fácil é apagar aquele usuário em **Authentication → Users** no console do Firebase e criar de novo (com uma nova senha) na próxima vez que abrir o app.
+- Isso é uma segurança "de verdade" (senha exigida por perfil), mas ainda é o nível "confiança entre vocês duas" — não é criptografia de ponta a ponta. Para o uso de vocês duas, isso já resolve o problema de "qualquer pessoa do mundo" conseguir acessar.
 
 ## 3. Instalar no iPhone
 

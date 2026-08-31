@@ -447,3 +447,10 @@
   .sync-status.is-online .sync-dot { background: var(--good); }
   .sync-status.is-offline .sync-dot { background: var(--critical); }
   .sync-status.is-syncing .sync-dot { background: var(--warn); }
+
+  .auth-error {
+    font-size: .85rem;
+    color: var(--critical);
+    margin: 0;
+  }
+  .auth-form .btn[disabled] { opacity: .6; }

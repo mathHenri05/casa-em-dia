@@ -40,12 +40,15 @@
   var ui = {
     tab: "casa",
     switcherOpen: false,
-    editingPersonId: null
+    editingSelf: false,
+    pendingSlot: null,
+    authError: null,
+    authBusy: false
   };
 
-  var WHOAMI_KEY = "casaEmDia_whoAmI_v1";
+  // whoAmI is derived from the authenticated Firebase user (email "a@casaemdia.invalid"
+  // -> "a"), never from localStorage — real login is what remembers who you are now.
   var whoAmI = null;
-  try { whoAmI = localStorage.getItem(WHOAMI_KEY); } catch (e) {}
 
   // ---------------- Firebase wiring ----------------
 
@@ -54,42 +57,116 @@
   var online = null; // null = unknown yet, true/false once we hear from .info/connected
   var dbRef = null;
   var pendingWrites = {};
+  var auth = null;
+  var authUser = null; // firebase.User once signed in, else null
 
   function isConfigured() {
     var c = window.FIREBASE_CONFIG;
     return !!(c && c.apiKey && c.apiKey.indexOf("SUA_API_KEY") === -1 && c.databaseURL);
   }
 
+  function slotEmail(slot) {
+    return slot + "@casaemdia.invalid";
+  }
+
   function initFirebase() {
     if (!isConfigured()) { render(); return; }
     try {
       firebase.initializeApp(window.FIREBASE_CONFIG);
+      auth = firebase.auth();
       var db = firebase.database();
-      dbRef = db.ref("casaEmDia/" + (window.CASA_APP_ID || "default"));
 
       db.ref(".info/connected").on("value", function (snap) {
         online = snap.val() === true;
         render();
       });
 
-      dbRef.on("value", function (snap) {
-        if (snap.exists()) {
-          STATE = normalizeState(snap.val());
-        } else {
-          STATE = normalizeState(defaultState());
-          dbRef.set(STATE);
+      auth.onAuthStateChanged(function (user) {
+        authUser = user;
+        if (user && !dbRef) {
+          whoAmI = (user.email || "").split("@")[0];
+          dbRef = db.ref("casaEmDia/" + (window.CASA_APP_ID || "default"));
+          dbRef.on("value", function (snap) {
+            if (snap.exists()) {
+              STATE = normalizeState(snap.val());
+            } else {
+              // Nothing in the database yet: seed it with whatever STATE already holds
+              // (never a fresh blank object) so an in-flight edit — e.g. the display name
+              // just set right after creating an account — isn't discarded by this read.
+              STATE = normalizeState(STATE);
+              dbRef.set(STATE);
+            }
+            firebaseReady = true;
+            render();
+          }, function (err) {
+            firebaseError = (err && err.message) || "Erro ao ler o banco de dados.";
+            render();
+          });
         }
-        firebaseReady = true;
-        if (whoAmI && !STATE.people.some(function (p) { return p.id === whoAmI; })) whoAmI = null;
-        render();
-      }, function (err) {
-        firebaseError = (err && err.message) || "Erro ao ler o banco de dados.";
+        if (!user) { dbRef = null; firebaseReady = false; whoAmI = null; }
         render();
       });
     } catch (e) {
       firebaseError = e && e.message ? e.message : String(e);
       render();
     }
+  }
+
+  function friendlyAuthError(err) {
+    var code = err && err.code;
+    if (code === "auth/wrong-password" || code === "auth/invalid-credential" || code === "auth/invalid-login-credentials") return "Senha incorreta. Tente de novo.";
+    if (code === "auth/weak-password") return "A senha precisa ter pelo menos 6 caracteres.";
+    if (code === "auth/too-many-requests") return "Muitas tentativas. Espere um pouco e tente de novo.";
+    if (code === "auth/network-request-failed") return "Sem conexão com a internet agora.";
+    return (err && err.message) || "Não consegui entrar. Tente de novo.";
+  }
+
+  function submitAuthSlot(slot, name, password) {
+    if (!auth) return;
+    ui.authError = null;
+    ui.authBusy = true;
+    render();
+    var email = slotEmail(slot);
+    auth.signInWithEmailAndPassword(email, password).then(function () {
+      afterAuthSuccess(slot, name);
+    }).catch(function (err) {
+      if (err && err.code === "auth/user-not-found") {
+        auth.createUserWithEmailAndPassword(email, password).then(function () {
+          afterAuthSuccess(slot, name);
+        }).catch(function (err2) {
+          ui.authBusy = false;
+          ui.authError = friendlyAuthError(err2);
+          render();
+        });
+      } else {
+        ui.authBusy = false;
+        ui.authError = friendlyAuthError(err);
+        render();
+      }
+    });
+  }
+
+  function afterAuthSuccess(slot, name) {
+    ui.authBusy = false;
+    ui.pendingSlot = null;
+    ui.authError = null;
+    name = (name || "").trim();
+    // people/{slot}.name is written once we're authenticated (rules require auth for writes).
+    var tryWriteName = function () {
+      if (!dbRef) { setTimeout(tryWriteName, 150); return; }
+      if (name) {
+        var p = personById(slot);
+        if (p) p.name = name;
+        syncPath("people", STATE.people);
+      }
+    };
+    tryWriteName();
+    render();
+  }
+
+  function signOut() {
+    if (auth) auth.signOut();
+    ui.switcherOpen = false;
   }
 
   function syncPath(path, value) {
@@ -224,18 +301,10 @@
     render(); syncPath("personal/" + whoAmI + "/entries", STATE.personal[whoAmI].entries);
   }
 
-  function setPersonName(id, name) {
+  function renameSelf(name) {
     name = (name || "").trim();
-    var p = personById(id);
+    var p = personById(whoAmI);
     if (p && name) { p.name = name; render(); syncPath("people", STATE.people); }
-  }
-
-  function chooseWhoAmI(id) {
-    whoAmI = id;
-    try { localStorage.setItem(WHOAMI_KEY, id); } catch (e) {}
-    ui.switcherOpen = false;
-    ui.editingPersonId = null;
-    render();
   }
 
   // ---------------- Rendering ----------------
@@ -250,26 +319,35 @@
     return "";
   }
 
-  function renderOnboarding() {
+  function renderAuthGate() {
+    if (ui.pendingSlot) {
+      var slot = ui.pendingSlot;
+      var color = personColor(slot);
+      return '<div class="onboarding"><div class="onboarding-inner">' +
+        '<p class="eyebrow">Casa em Dia</p>' +
+        '<h1 class="onboarding-title">Entrar</h1>' +
+        '<p class="onboarding-sub">Se é a primeira vez nesse perfil, a senha que você digitar agora vira sua senha daqui pra frente — guarde ela.</p>' +
+        '<form class="onboard-name-form auth-form" data-form="auth-slot" data-id="' + slot + '" style="flex-direction:column;align-items:stretch;gap:.6rem;">' +
+        '<input class="input" name="name" placeholder="Seu nome" maxlength="30" data-focus="auth-name" autocomplete="name">' +
+        '<input class="input" name="password" type="password" placeholder="Sua senha" minlength="6" maxlength="100" data-focus="auth-password" autocomplete="current-password">' +
+        (ui.authError ? '<p class="auth-error">' + escapeHTML(ui.authError) + "</p>" : "") +
+        '<button class="btn btn-' + color + '" type="submit"' + (ui.authBusy ? " disabled" : "") + ">" + (ui.authBusy ? "Entrando…" : "Entrar") + "</button>" +
+        '<button class="icon-btn" type="button" data-action="cancel-slot">‹ Escolher outro perfil</button>' +
+        "</form>" +
+        "</div></div>";
+    }
+
     var cards = STATE.people.map(function (p) {
-      if (ui.editingPersonId === p.id) {
-        return '<form class="onboard-name-form" data-form="set-name" data-id="' + p.id + '">' +
-          '<input class="input" name="name" placeholder="Seu nome" maxlength="30" data-focus="onboard-name-' + p.id + '">' +
-          '<button class="btn btn-' + p.colorToken + '" type="submit">Continuar</button>' +
-          "</form>";
-      }
-      var label = p.name ? escapeHTML(p.name) : "Perfil sem nome";
-      var hint = p.name ? "Sou eu" : "Toque para definir seu nome";
-      return '<button class="onboard-card tone-' + p.colorToken + '" data-action="pick-person" data-id="' + p.id + '">' +
-        '<span class="onboard-card-name">' + label + "</span>" +
-        '<span class="onboard-card-hint">' + hint + "</span>" +
+      return '<button class="onboard-card tone-' + p.colorToken + '" data-action="choose-slot" data-id="' + p.id + '">' +
+        '<span class="onboard-card-name">Perfil ' + (p.colorToken === "accent" ? "verde" : "rosa") + "</span>" +
+        '<span class="onboard-card-hint">Entrar ou criar conta neste perfil</span>' +
         "</button>";
     }).join("");
 
     return '<div class="onboarding"><div class="onboarding-inner">' +
       '<p class="eyebrow">Casa em Dia</p>' +
-      '<h1 class="onboarding-title">Quem está usando este celular?</h1>' +
-      '<p class="onboarding-sub">Cada celular guarda essa escolha. Para trocar depois, toque no seu nome no topo do app.</p>' +
+      '<h1 class="onboarding-title">Quem é você?</h1>' +
+      '<p class="onboarding-sub">Cada uma tem sua própria senha — só quem sabe a senha do perfil consegue entrar e ver os dados.</p>' +
       '<div class="onboard-cards">' + cards + "</div>" +
       "</div></div>";
   }
@@ -294,28 +372,25 @@
   }
 
   function renderSwitcher() {
-    var rows = STATE.people.map(function (p) {
-      if (ui.editingPersonId === p.id) {
-        return '<form class="switcher-row switcher-row-edit" data-form="rename" data-id="' + p.id + '">' +
-          '<input class="input" name="name" value="' + escapeHTML(p.name || "") + '" maxlength="30" data-focus="rename-' + p.id + '">' +
-          '<button class="btn-small btn-' + p.colorToken + '" type="submit">Salvar</button>' +
-          "</form>";
-      }
-      var isMe = p.id === whoAmI;
-      return '<div class="switcher-row" data-action="noop">' +
-        '<button class="switcher-pick tone-' + p.colorToken + '" data-action="pick-person" data-id="' + p.id + '">' +
-        '<span class="chip-dot"></span><span>' + (p.name ? escapeHTML(p.name) : "Sem nome") + "</span>" +
-        (isMe ? '<span class="switcher-current">usando agora</span>' : "") +
-        "</button>" +
-        '<button class="icon-btn" data-action="edit-person" data-id="' + p.id + '">Editar</button>' +
+    var me = personById(whoAmI);
+    var meRow = ui.editingSelf
+      ? '<form class="switcher-row switcher-row-edit" data-form="rename-self">' +
+        '<input class="input" name="name" value="' + escapeHTML((me && me.name) || "") + '" maxlength="30" data-focus="rename-self">' +
+        '<button class="btn-small btn-' + personColor(whoAmI) + '" type="submit">Salvar</button>' +
+        "</form>"
+      : '<div class="switcher-row" data-action="noop">' +
+        '<span class="switcher-pick tone-' + personColor(whoAmI) + '">' +
+        '<span class="chip-dot"></span><span>' + escapeHTML(personName(whoAmI)) + "</span>" +
+        "</span>" +
+        '<button class="icon-btn" data-action="edit-self">Editar</button>' +
         "</div>";
-    }).join("");
 
     return '<div class="sheet-backdrop" data-action="close-switcher">' +
       '<div class="sheet" data-action="noop">' +
-      '<p class="sheet-title">Perfil neste celular</p>' +
-      rows +
-      '<p class="sheet-note">Isso não é uma senha: é só para separar as listas de cada uma. Qualquer pessoa com acesso ao link e ao código do app pode escolher qualquer perfil.</p>' +
+      '<p class="sheet-title">Você está entrando como</p>' +
+      meRow +
+      '<button class="btn-small" data-action="sign-out" style="margin-top:.4rem;background:var(--surface-2);color:var(--ink);">Sair deste perfil</button>' +
+      '<p class="sheet-note">Sair permite que outra pessoa entre com o próprio perfil e senha neste celular.</p>' +
       "</div></div>";
   }
 
@@ -481,7 +556,7 @@
       "</form>" +
       (data.entries.length ? '<ul class="list">' + data.entries.map(row).join("") : '<p class="empty">Nenhum lançamento ainda.</p>') +
       (data.entries.length ? "</ul>" : "") +
-      '<p class="privacy-note">Isso fica só neste celular enquanto você estiver identificada como ' + escapeHTML(personName(whoAmI)) + ". Não é criptografado nem tem senha: é uma separação por confiança entre vocês.</p>" +
+      '<p class="privacy-note">Só quem entra com a senha do seu perfil vê isso. A outra pessoa da casa tem seu próprio login e não vê seus lançamentos por padrão — mas como os dois perfis moram no mesmo banco, alguém com acesso direto ao banco de dados tecnicamente poderia ver tudo. Para o dia a dia, é privado.</p>' +
       "</section>";
   }
 
@@ -493,7 +568,9 @@
 
   function renderShell() {
     var banner = renderBanner();
-    if (!whoAmI) return banner + renderOnboarding();
+    if (!isConfigured() || firebaseError) return banner + renderAuthGate();
+    if (!authUser) return banner + renderAuthGate();
+    if (!firebaseReady) return banner + '<div class="onboarding"><div class="onboarding-inner"><p class="eyebrow">Casa em Dia</p><h1 class="onboarding-title">Carregando…</h1></div></div>';
     return banner + '<div class="app-shell">' +
       renderHeader() +
       '<main class="content">' + renderTabContent() + "</main>" +
@@ -531,13 +608,11 @@
     switch (action) {
       case "noop": break;
       case "open-switcher": ui.switcherOpen = true; render(); break;
-      case "close-switcher": ui.switcherOpen = false; ui.editingPersonId = null; render(); break;
-      case "pick-person": {
-        var p = personById(id);
-        if (p && p.name) { chooseWhoAmI(id); } else { ui.editingPersonId = id; render(); }
-        break;
-      }
-      case "edit-person": ui.editingPersonId = id; render(); break;
+      case "close-switcher": ui.switcherOpen = false; ui.editingSelf = false; render(); break;
+      case "choose-slot": ui.pendingSlot = id; ui.authError = null; render(); break;
+      case "cancel-slot": ui.pendingSlot = null; ui.authError = null; render(); break;
+      case "edit-self": ui.editingSelf = true; render(); break;
+      case "sign-out": signOut(); render(); break;
       case "set-tab": ui.tab = id; render(); break;
       case "toggle-shopping": toggleShopping(id); break;
       case "remove-shopping": removeShopping(id); break;
@@ -556,13 +631,12 @@
     e.preventDefault();
     var fd = new FormData(form);
     switch (form.dataset.form) {
-      case "set-name":
-        setPersonName(form.dataset.id, fd.get("name"));
-        chooseWhoAmI(form.dataset.id);
+      case "auth-slot":
+        submitAuthSlot(form.dataset.id, fd.get("name"), fd.get("password"));
         break;
-      case "rename":
-        setPersonName(form.dataset.id, fd.get("name"));
-        ui.editingPersonId = null;
+      case "rename-self":
+        renameSelf(fd.get("name"));
+        ui.editingSelf = false;
         render();
         break;
       case "add-shopping": addShopping(fd.get("text")); break;
