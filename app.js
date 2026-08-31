@@ -11,7 +11,66 @@
       ],
       household: { shopping: [], tasks: [], expenses: [], bills: [] },
       personal: { a: { entries: [] }, b: { entries: [] } },
+      mealPlan: defaultMealPlan(),
       meta: { updatedAt: null, updatedBy: null }
+    };
+  }
+
+  // Conteúdo inicial do "Plano Alimentar", vindo do plano de setembro/2026
+  // (vale-refeição de R$931,56). Só é usado para semear o banco na primeira
+  // vez — depois disso, cada lista vive por conta própria (itens marcados,
+  // adicionados ou removidos por vocês).
+  function defaultMealPlan() {
+    return {
+      budget: {
+        total: 931.56,
+        planned: 878,
+        reserve: 53.56,
+        startDate: "2026-09-08",
+        store: "Confiança Pannunzio — Av. Dr. Armando Pannunzio, 1601, Sorocaba"
+      },
+      meals: [
+        { id: "m1", name: "Café", time: "06:50–07:30", base: "Ovos + pão + banana + leite/café", qty: "3 ovos + 1 pão + 1 banana + 200 ml leite", alt: "Pão pode virar tapioca; banana pode virar outra fruta." },
+        { id: "m2", name: "Almoço", time: "12:00–13:30", base: "Arroz + feijão + frango/carne + legumes", qty: "180 g arroz cozido + 120 g feijão + 160–180 g proteína + legumes", alt: "Batata pode substituir parte do arroz; patinho 1–2x/semana." },
+        { id: "m3", name: "Pré-treino", time: "17:30–18:30", base: "Banana + aveia + iogurte", qty: "1 banana + 30 g aveia + 170–200 g iogurte", alt: "Se o treino for pesado: adicionar 1 pão." },
+        { id: "m4", name: "Jantar/pós", time: "21:00–21:30", base: "Arroz/batata + feijão + proteína + legumes", qty: "150 g arroz + 100 g feijão + 160–180 g proteína + legumes", alt: "Macarrão pode entrar algumas noites." }
+      ],
+      groceryList: [
+        { id: "g1", category: "Base", item: "Arroz tipo 1", qty: "5 kg", targetPrice: 22.79, note: "Há registro de 5 kg a R$22,79 no Confiança Sorocaba; conferir promoção.", bought: false },
+        { id: "g2", category: "Base", item: "Feijão carioca", qty: "3 kg", targetPrice: 8.59, note: "Referência Confiança: R$8,59/kg.", bought: false },
+        { id: "g3", category: "Proteína", item: "Peito de frango", qty: "6 kg", targetPrice: 25.99, note: "Use como teto de planejamento; procure bandeja/oferta mais barata.", bought: false },
+        { id: "g4", category: "Proteína", item: "Ovos", qty: "90 un.", targetPrice: 35.70, note: "Referência de SP: R$14,28/dúzia; comprar bandejas de 30 se estiverem melhores.", bought: false },
+        { id: "g5", category: "Proteína", item: "Patinho/carne magra", qty: "1 kg", targetPrice: 59.33, note: "Referência mediana SP; usar para variar o frango.", bought: false },
+        { id: "g6", category: "Carboidrato", item: "Batata", qty: "4 kg", targetPrice: 9.99, note: "Referência mediana SP; pode substituir parte do arroz.", bought: false },
+        { id: "g7", category: "Carboidrato", item: "Macarrão", qty: "2 kg", targetPrice: 5.50, note: "Alternativa para jantar.", bought: false },
+        { id: "g8", category: "Café", item: "Pão", qty: "4 compras semanais", targetPrice: 10, note: "Preço-alvo mensal; comprar fresco semanalmente.", bought: false },
+        { id: "g9", category: "Café", item: "Aveia", qty: "1 kg", targetPrice: 30, note: "Pré-treino/café; escolher marca econômica.", bought: false },
+        { id: "g10", category: "Laticínio", item: "Leite", qty: "8 L", targetPrice: 7, note: "Preço-alvo; ajustar marca/tamanho.", bought: false },
+        { id: "g11", category: "Laticínio", item: "Iogurte Vigor Zero+", qty: "5 x 1,1 kg", targetPrice: 14.79, note: "Preço observado no Confiança Sorocaba em 26/08/2026: R$14,79/1,1 kg.", bought: false },
+        { id: "g12", category: "Frutas", item: "Banana", qty: "8 kg", targetPrice: 4.50, note: "Comprar em 2–4 idas para reduzir desperdício.", bought: false },
+        { id: "g13", category: "Frutas", item: "Maçã/laranja/mamão/pera", qty: "6 kg variados", targetPrice: 7, note: "Escolher as frutas da semana com melhor preço.", bought: false },
+        { id: "g14", category: "Hortifruti", item: "Legumes e verduras", qty: "8 kg/maços variados", targetPrice: 8, note: "Priorizar cenoura, repolho, tomate, abobrinha, alface e brócolis em promoção.", bought: false },
+        { id: "g15", category: "Temperos", item: "Cebola + tomate + alho", qty: "3 kg variados", targetPrice: 9, note: "Base para preparar arroz, feijão e carnes.", bought: false },
+        { id: "g16", category: "Gordura", item: "Azeite", qty: "500 ml", targetPrice: 35, note: "Se estiver caro, use óleo para preparo e reserve azeite para finalizar.", bought: false },
+        { id: "g17", category: "Gordura", item: "Amendoim torrado", qty: "500 g", targetPrice: 13.49, note: "Alternativa econômica às castanhas.", bought: false },
+        { id: "g18", category: "Bebida", item: "Café", qty: "500 g", targetPrice: 25, note: "Marca econômica.", bought: false },
+        { id: "g19", category: "Extras", item: "Requeijão", qty: "1 pote 200 g", targetPrice: 10, note: "Para manter pão no café sem exagerar.", bought: false },
+        { id: "g20", category: "Extras", item: "Presunto + queijo", qty: "500 g total", targetPrice: 20, note: "Usar algumas vezes; não é base proteica da dieta.", bought: false }
+      ],
+      weeklyBudget: [
+        { id: "w1", week: "Semana 1", buy: "Banana + outras frutas + verduras/legumes + pão", targetSpend: "R$ 45–55", avoid: "Banana madura, folhas em excesso, pão para o mês inteiro" },
+        { id: "w2", week: "Semana 2", buy: "Reposição de frutas + verduras + pão", targetSpend: "R$ 40–50", avoid: "Produtos ultraprocessados para \"beliscar\"" },
+        { id: "w3", week: "Semana 3", buy: "Reposição de frutas + verduras + pão", targetSpend: "R$ 40–50", avoid: "Doces, bolachas e snacks" },
+        { id: "w4", week: "Semana 4", buy: "Reposição de frutas + verduras + pão", targetSpend: "R$ 40–50", avoid: "Compras por impulso" }
+      ],
+      tips: [
+        { id: "t1", situation: "Peito de frango acima de R$25/kg", action: "Procure coxa/sobrecoxa sem pele ou oferta de frango; retire pele no preparo.", why: "Mantém proteína com menor custo." },
+        { id: "t2", situation: "Patinho caro", action: "Reduza carne bovina e aumente frango/ovos.", why: "Carne bovina pesa mais no orçamento." },
+        { id: "t3", situation: "Iogurte caro", action: "Compre 1–2 potes grandes e use porções de 170–200 g; ou troque por leite + aveia + banana.", why: "Reduz custo por porção." },
+        { id: "t4", situation: "Frutas caras", action: "Escolha banana, mamão, laranja e frutas da estação.", why: "Preço por kg tende a ser mais favorável." },
+        { id: "t5", situation: "Verduras caras", action: "Use repolho, cenoura, abobrinha e legumes congelados em promoção.", why: "Menor desperdício e maior durabilidade." },
+        { id: "t6", situation: "Vale sobrando", action: "Reserve para reposições semanais e promoções de proteína.", why: "Evita gastar tudo no primeiro carrinho." }
+      ]
     };
   }
 
@@ -31,6 +90,19 @@
       state.personal[p.id] = state.personal[p.id] || { entries: [] };
       state.personal[p.id].entries = state.personal[p.id].entries || [];
     });
+    // mealPlan nunca existiu neste banco ainda: semeia com o conteúdo real do
+    // plano (planilha). Depois disso, cada lista vive por conta própria — uma
+    // lista vazia significa que vocês esvaziaram ela, não que precisa recriar.
+    if (!state.mealPlan) {
+      state.mealPlan = defaultMealPlan();
+    } else {
+      var dmp = defaultMealPlan();
+      state.mealPlan.budget = state.mealPlan.budget || dmp.budget;
+      state.mealPlan.meals = state.mealPlan.meals || [];
+      state.mealPlan.groceryList = state.mealPlan.groceryList || [];
+      state.mealPlan.weeklyBudget = state.mealPlan.weeklyBudget || [];
+      state.mealPlan.tips = state.mealPlan.tips || [];
+    }
     state.meta = state.meta || { updatedAt: null, updatedBy: null };
     return state;
   }
@@ -88,7 +160,10 @@
           dbRef = db.ref("casaEmDia/" + (window.CASA_APP_ID || "default"));
           dbRef.on("value", function (snap) {
             if (snap.exists()) {
-              STATE = normalizeState(snap.val());
+              var raw = snap.val();
+              var neededSeed = raw && !raw.mealPlan;
+              STATE = normalizeState(raw);
+              if (neededSeed) dbRef.child("mealPlan").set(STATE.mealPlan).catch(function () {});
             } else {
               // Nothing in the database yet: seed it with whatever STATE already holds
               // (never a fresh blank object) so an in-flight edit — e.g. the display name
@@ -307,6 +382,24 @@
     if (p && name) { p.name = name; render(); syncPath("people", STATE.people); }
   }
 
+  function toggleGrocery(id) {
+    var it = STATE.mealPlan.groceryList.find(function (x) { return x.id === id; });
+    if (it) { it.bought = !it.bought; render(); syncPath("mealPlan/groceryList", STATE.mealPlan.groceryList); }
+  }
+  function addGrocery(item, qty, price) {
+    item = (item || "").trim();
+    if (!item) return;
+    STATE.mealPlan.groceryList.push({
+      id: uid(), category: "Extra", item: item, qty: (qty || "").trim(),
+      targetPrice: Number(price) || 0, note: "", bought: false, custom: true, addedBy: whoAmI
+    });
+    render(); syncPath("mealPlan/groceryList", STATE.mealPlan.groceryList);
+  }
+  function removeGrocery(id) {
+    STATE.mealPlan.groceryList = STATE.mealPlan.groceryList.filter(function (x) { return x.id !== id; });
+    render(); syncPath("mealPlan/groceryList", STATE.mealPlan.groceryList);
+  }
+
   // ---------------- Rendering ----------------
 
   function renderBanner() {
@@ -397,6 +490,7 @@
   function renderTabbar() {
     var tabs = [
       { id: "casa", label: "Casa" },
+      { id: "alimentacao", label: "Alimentação" },
       { id: "financeiro", label: "Financeiro" },
       { id: "pessoal", label: "Meu financeiro" }
     ];
@@ -560,9 +654,113 @@
       "</section>";
   }
 
+  function renderMealBudgetCard() {
+    var mp = STATE.mealPlan;
+    var b = mp.budget;
+    var spent = mp.groceryList.reduce(function (s, i) { return s + (i.bought ? Number(i.targetPrice) || 0 : 0); }, 0);
+    var remaining = b.total - spent;
+    var pct = b.total > 0 ? Math.min(100, Math.round((spent / b.total) * 100)) : 0;
+    var tone = pct >= 100 ? "critical" : pct >= 85 ? "warn" : "good";
+    return '<section class="card meal-budget-card">' +
+      '<h2 class="card-title">Plano alimentar — Setembro</h2>' +
+      '<p class="meal-budget-sub">' + escapeHTML(b.store) + " · início em " + fmtDate(b.startDate) + "</p>" +
+      '<div class="budget-bar-wrap">' +
+      '<div class="budget-bar"><div class="budget-bar-fill tone-' + tone + '" style="width:' + pct + '%"></div></div>' +
+      '<div class="budget-bar-labels"><span>' + fmtBRL(spent) + " comprado</span><span>" + fmtBRL(b.total) + " no vale</span></div>" +
+      "</div>" +
+      '<div class="stat-row">' +
+      '<div class="stat"><span class="stat-label">Restante</span><span class="stat-value' + (remaining < 0 ? " is-negative" : "") + '">' + fmtBRL(remaining) + "</span></div>" +
+      '<div class="stat"><span class="stat-label">Reserva p/ variação</span><span class="stat-value">' + fmtBRL(b.reserve) + "</span></div>" +
+      "</div>" +
+      "</section>";
+  }
+
+  function renderMealScheduleCard() {
+    var cards = STATE.mealPlan.meals.map(function (m) {
+      return '<li class="meal-row">' +
+        '<div class="meal-row-time">' + escapeHTML(m.time) + "</div>" +
+        '<div class="meal-row-body">' +
+        '<p class="meal-row-name">' + escapeHTML(m.name) + "</p>" +
+        '<p class="meal-row-base">' + escapeHTML(m.base) + "</p>" +
+        '<p class="meal-row-qty">' + escapeHTML(m.qty) + "</p>" +
+        (m.alt ? '<p class="meal-row-alt">↳ ' + escapeHTML(m.alt) + "</p>" : "") +
+        "</div></li>";
+    }).join("");
+    return '<section class="card">' +
+      '<h2 class="card-title">Cardápio do dia</h2>' +
+      '<ul class="meal-list">' + cards + "</ul>" +
+      "</section>";
+  }
+
+  function renderMealGroceryCard() {
+    var list = STATE.mealPlan.groceryList;
+    var order = [];
+    var byCat = {};
+    list.forEach(function (i) {
+      if (!byCat[i.category]) { byCat[i.category] = []; order.push(i.category); }
+      byCat[i.category].push(i);
+    });
+    function row(i) {
+      return '<li class="list-row money-row' + (i.bought ? " is-done" : "") + '">' +
+        '<button class="check" data-action="toggle-grocery" data-id="' + i.id + '" aria-label="Marcar como comprado"></button>' +
+        '<div class="money-row-main"><span class="list-row-text' + (i.bought ? " is-done" : "") + '">' + escapeHTML(i.item) + "</span>" +
+        '<span class="tag">' + escapeHTML(i.qty) + "</span></div>" +
+        '<span class="money-amount">' + fmtBRL(i.targetPrice) + "</span>" +
+        '<button class="icon-btn" data-action="remove-grocery" data-id="' + i.id + '">Remover</button>' +
+        (i.note ? '<p class="grocery-note">' + escapeHTML(i.note) + "</p>" : "") +
+        "</li>";
+    }
+    var groups = order.map(function (cat) {
+      return '<div class="grocery-group"><h3 class="grocery-group-title">' + escapeHTML(cat) + '</h3><ul class="list">' +
+        byCat[cat].map(row).join("") + "</ul></div>";
+    }).join("");
+
+    return '<section class="card">' +
+      '<h2 class="card-title">Lista de compras do plano</h2>' +
+      '<form class="add-row add-row-grocery" data-form="add-grocery">' +
+      '<input class="input" name="item" placeholder="Adicionar item" maxlength="60" data-focus="add-grocery-item">' +
+      '<input class="input" name="qty" placeholder="Qtd." maxlength="30">' +
+      '<input class="input input-money" name="price" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Preço-alvo">' +
+      '<button class="btn btn-accent" type="submit">Adicionar</button>' +
+      "</form>" +
+      (list.length ? groups : '<p class="empty">Lista vazia.</p>') +
+      "</section>";
+  }
+
+  function renderMealWeeklyCard() {
+    var rows = STATE.mealPlan.weeklyBudget.map(function (w) {
+      return '<li class="weekly-row">' +
+        '<p class="weekly-row-title">' + escapeHTML(w.week) + '<span class="weekly-row-target">' + escapeHTML(w.targetSpend) + "</span></p>" +
+        '<p class="weekly-row-buy">' + escapeHTML(w.buy) + "</p>" +
+        '<p class="weekly-row-avoid">Evitar: ' + escapeHTML(w.avoid) + "</p>" +
+        "</li>";
+    }).join("");
+    return '<section class="card">' +
+      '<h2 class="card-title">Compras semanais</h2>' +
+      '<ul class="weekly-list">' + rows + "</ul>" +
+      "</section>";
+  }
+
+  function renderMealTipsCard() {
+    var items = STATE.mealPlan.tips.map(function (t) {
+      return "<details class=\"tip-row\"><summary>" + escapeHTML(t.situation) + "</summary>" +
+        "<p><strong>Faça isso:</strong> " + escapeHTML(t.action) + "</p>" +
+        "<p class=\"tip-why\">" + escapeHTML(t.why) + "</p></details>";
+    }).join("");
+    return '<section class="card">' +
+      '<h2 class="card-title">Como economizar</h2>' +
+      items +
+      "</section>";
+  }
+
+  function renderAlimentacaoTab() {
+    return renderMealBudgetCard() + renderMealScheduleCard() + renderMealGroceryCard() + renderMealWeeklyCard() + renderMealTipsCard();
+  }
+
   function renderTabContent() {
     if (ui.tab === "casa") return renderShoppingCard() + renderTasksCard();
     if (ui.tab === "financeiro") return renderExpensesCard() + renderBillsCard();
+    if (ui.tab === "alimentacao") return renderAlimentacaoTab();
     return renderPessoalTab();
   }
 
@@ -622,6 +820,8 @@
       case "remove-bill": removeBill(id); break;
       case "remove-expense": removeExpense(id); break;
       case "remove-personal": removePersonalEntry(id); break;
+      case "toggle-grocery": toggleGrocery(id); break;
+      case "remove-grocery": removeGrocery(id); break;
     }
   });
 
@@ -644,6 +844,7 @@
       case "add-expense": addExpense(fd.get("desc"), fd.get("amount"), fd.get("paidBy")); break;
       case "add-bill": addBill(fd.get("desc"), fd.get("amount"), fd.get("dueDate")); break;
       case "add-personal": addPersonalEntry(fd.get("desc"), fd.get("amount"), fd.get("kind")); break;
+      case "add-grocery": addGrocery(fd.get("item"), fd.get("qty"), fd.get("price")); break;
     }
   });
 

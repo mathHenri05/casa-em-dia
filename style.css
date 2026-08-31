@@ -148,7 +148,7 @@
     bottom: 0;
     z-index: 5;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
     background: var(--surface);
     border-top: 1px solid var(--line);
     padding: .35rem .5rem calc(env(safe-area-inset-bottom, 0px) + .35rem);
@@ -157,9 +157,9 @@
     background: none;
     border: none;
     color: var(--ink-soft);
-    font-size: .82rem;
+    font-size: .76rem;
     font-weight: 600;
-    padding: .55rem .25rem;
+    padding: .55rem .2rem;
     border-radius: .6rem;
   }
   .tabbar-btn.is-active {
@@ -454,3 +454,101 @@
     margin: 0;
   }
   .auth-form .btn[disabled] { opacity: .6; }
+
+  /* ---------- Plano alimentar ---------- */
+  .meal-budget-sub { font-size: .82rem; color: var(--ink-soft); margin: -.5rem 0 .9rem; }
+
+  .budget-bar-wrap { margin-bottom: .9rem; }
+  .budget-bar {
+    height: .6rem;
+    border-radius: 999px;
+    background: var(--neutral-bg);
+    overflow: hidden;
+  }
+  .budget-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--good);
+    transition: width .25s ease;
+  }
+  .budget-bar-fill.tone-good { background: var(--good); }
+  .budget-bar-fill.tone-warn { background: var(--warn); }
+  .budget-bar-fill.tone-critical { background: var(--critical); }
+  .budget-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: .78rem;
+    color: var(--ink-soft);
+    margin-top: .4rem;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+
+  .meal-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .meal-row {
+    display: flex;
+    gap: .8rem;
+    padding: .7rem 0;
+    border-top: 1px solid var(--line);
+  }
+  .meal-list .meal-row:first-child { border-top: none; }
+  .meal-row-time {
+    flex: 0 0 4.6rem;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .78rem;
+    color: var(--ink-soft);
+    padding-top: .15rem;
+  }
+  .meal-row-name { font-weight: 600; margin: 0 0 .15rem; }
+  .meal-row-base { margin: 0 0 .2rem; font-size: .92rem; }
+  .meal-row-qty { margin: 0; font-size: .82rem; color: var(--ink-soft); }
+  .meal-row-alt { margin: .3rem 0 0; font-size: .8rem; color: var(--ink-soft); font-style: italic; }
+
+  .grocery-group { margin-bottom: .5rem; }
+  .grocery-group:last-child { margin-bottom: 0; }
+  .grocery-group-title {
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ink-soft);
+    margin: .9rem 0 .1rem;
+    font-weight: 700;
+  }
+  .grocery-group:first-child .grocery-group-title { margin-top: .2rem; }
+  .grocery-note {
+    flex-basis: 100%;
+    font-size: .78rem;
+    color: var(--ink-soft);
+    margin: -.1rem 0 0;
+  }
+  .add-row-grocery .input:first-child { flex: 1 1 100%; }
+  .add-row-grocery .input:not(:first-child):not(.input-money) { flex: 1 1 auto; }
+
+  .weekly-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .weekly-row { padding: .6rem 0; border-top: 1px solid var(--line); }
+  .weekly-list .weekly-row:first-child { border-top: none; }
+  .weekly-row-title { display: flex; justify-content: space-between; font-weight: 600; margin: 0 0 .2rem; }
+  .weekly-row-target {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-weight: 500;
+    color: var(--ink-soft);
+    font-size: .85rem;
+  }
+  .weekly-row-buy { margin: 0 0 .15rem; font-size: .88rem; }
+  .weekly-row-avoid { margin: 0; font-size: .8rem; color: var(--ink-soft); }
+
+  .tip-row {
+    border-top: 1px solid var(--line);
+    padding: .55rem 0;
+    font-size: .88rem;
+  }
+  .card > .tip-row:first-of-type { border-top: none; }
+  .tip-row summary {
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+  }
+  .tip-row summary::-webkit-details-marker { display: none; }
+  .tip-row summary::before { content: "+ "; color: var(--accent); font-weight: 700; }
+  .tip-row[open] summary::before { content: "– "; }
+  .tip-row p { margin: .4rem 0 0; }
+  .tip-why { color: var(--ink-soft); font-size: .82rem; }
