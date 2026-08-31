@@ -10,13 +10,13 @@
 // ============================================================================
 
 window.FIREBASE_CONFIG = {
-  apiKey: "SUA_API_KEY_AQUI",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
-  projectId: "SEU_PROJETO",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxxxxxx"
+  apiKey: "AIzaSyBk27ps7slom7nHcHZ5RblsHNpgOSW5Bus",
+  authDomain: "casa-em-dia-f05f2.firebaseapp.com",
+  databaseURL: "https://casa-em-dia-f05f2-default-rtdb.firebaseio.com",
+  projectId: "casa-em-dia-f05f2",
+  storageBucket: "casa-em-dia-f05f2.firebasestorage.app",
+  messagingSenderId: "524544407806",
+  appId: "1:524544407806:web:f8fe3406000182ac7dcdaf"
 };
 
 // Identificador do "quarto" onde os dados da casa ficam guardados dentro do
