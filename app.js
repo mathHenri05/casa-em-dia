@@ -202,11 +202,16 @@
     ui.authBusy = true;
     render();
     var email = slotEmail(slot);
-    auth.signInWithEmailAndPassword(email, password).then(function () {
+    // Tenta CRIAR a conta primeiro. Projetos novos do Firebase não distinguem mais
+    // "senha errada" de "essa conta ainda não existe" no login (as duas caem em
+    // auth/invalid-credential, por proteção contra enumeração de e-mails) — então
+    // só dá pra saber com certeza que o perfil já existe quando a CRIAÇÃO falha
+    // com "e-mail já em uso". Nesse caso, tenta entrar com a senha digitada.
+    auth.createUserWithEmailAndPassword(email, password).then(function () {
       afterAuthSuccess(slot, name);
     }).catch(function (err) {
-      if (err && err.code === "auth/user-not-found") {
-        auth.createUserWithEmailAndPassword(email, password).then(function () {
+      if (err && err.code === "auth/email-already-in-use") {
+        auth.signInWithEmailAndPassword(email, password).then(function () {
           afterAuthSuccess(slot, name);
         }).catch(function (err2) {
           ui.authBusy = false;
